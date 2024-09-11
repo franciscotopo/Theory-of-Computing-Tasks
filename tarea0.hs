@@ -4,7 +4,7 @@ module Lab0 where
 import Prelude
 import Data.List (nub, sort)
  
-
+--acordarse hacer dudas sobre sort y nub
 
 ------------------- Tarea 0 ------------------------
 -- Nombre: Francisco Topolansky
