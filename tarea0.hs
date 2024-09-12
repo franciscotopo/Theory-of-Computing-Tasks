@@ -76,7 +76,7 @@ intersection (a:as) c2 | elem a c2 = sort $ nub $ a : intersection as c2
 difference :: Conj -> Conj -> Conj
 difference [] c2 = []
 difference c1 [] = c1
-difference (a:as) c2 | not $ elem a c2 = sort $ a : difference as c2
+difference (a:as) c2 | not $ elem a c2 = sort $ nub $ a : difference as c2
                      | otherwise = difference as c2
 
 included :: Conj -> Conj -> Bool
@@ -95,14 +95,14 @@ eval (m, Pert z e)    = case eval (m, e) of {
                              (m', C c) -> (m', B (belongs z c))
                       }
 eval (m, Union e1 e2) = case eval (m, e1) of {
-                             (m', B bool) -> error "No es posible evaluar la union de un Booleano";
+                             (m', B bool) -> error "No es posible evaluar la union de un Booleano con otro valor";
                              (m', C c1) -> case eval (m', e2) of {
                                     (m'', C c2) -> (m'', C (union c1 c2));
                                     (m'', B bool) -> error "No es posible evaluar la union de un Conjunto con un Booleano"
                              } 
                       }
 eval (m, Inter e1 e2) = case eval (m, e1) of {
-                             (m', B bool) -> error "No es posible evaluar la interseccion de un Booleano";
+                             (m', B bool) -> error "No es posible evaluar la interseccion de un Booleano con otro valor";
                              (m', C c1) -> case eval (m', e2) of {
                                     (m'', C c2) -> (m'', C (intersection c1 c2));
                                     (m'', B bool) -> error "No es posible evaluar la interseccion de un Conjunto con un Booleano"
@@ -175,21 +175,12 @@ ass4 = Assign "z" incl2
 . Puedo usar sort, nub, elem etc?
 . Es correcto usar sort en conjuntos?
 . Uso sort y nub para que la diferencia salga con la interseccion y no haya problema
+. Errores por todos lados
 --}
 
 ------------------ Ejemplos para probar ----------------
 
-evalua (m,e) = snd $ eval (m,e)
 
-true = B True
-false = B False
-
-a = "a"
-b = "b"
-h = "h"
-
-m0 :: M
-m0 = [(a,true),(b,true),(h,false)]
 
 m1 :: M
 m1 = []
@@ -197,8 +188,46 @@ m1 = []
 m2 :: M 
 m2 = [("a", B True), ("b", B False), ("c", C [1,2,3]), ("d", C [])]
 
+runTests = all (==True) [belTest, uniTest, intTest, difTest, incTest]
+
+bel1 = belongs 4 [4] == True
+bel2 = belongs 0 [] == False
+bel3 = belongs 3 [4,4,4,3] == True
+bel4 = belongs 5 [7,6,5] == True
+bel5 = belongs 4 (intersection [1,2,3,4] [5,4,3]) == True
+bel6 = belongs 2 (intersection [3,4] [2,4]) == False
+bel7 = belongs 1 (union [2,3,4] [1,2]) == True
+bel8 = belongs 8 (union [1,2,3] [6,7]) == False
+belTest = all (==True) [bel1, bel2, bel3, bel4, bel5, bel6, bel7, bel8]
+
+uni1 = union [1,2,3] [1,2,3] == [1,2,3]
+uni2 = union [] [1,2,3] == [1,2,3]
+uni3 = union [1,2,3] [] == [1,2,3]
+uni4 = union [1,2,3] [3,2,1] == [1,2,3]
+uni5 = union [4,5,6] [3,2,1] == [1,2,3,4,5,6]
+uni6 = union [6] [6] == [6]
+uni7 = union [6] (union [7] [9]) == [6,7,9]
+uni8 = union [6] (intersection [7,9,0] [9,5,4]) == [6,9]
+uni9 = union [6,7] (difference [7,9,0] [9,5,4,9]) == [0,6,7]
+uniTest = all (==True) [uni1, uni2, uni3, uni4, uni5, uni6, uni7, uni8, uni9]
+
+int1 = intersection [] [] == []
+int2 = intersection [] [1,2,3] == []
+int3 = intersection [7,6,5,4] [] == []
+int4 = intersection [3,2,1] [1,2,3] == [1,2,3]
+int5 = intersection [3,4,5,6,4,3] [3,3] == [3]
+int6 = intersection [7,6,7] [7,8,7,6,6,6] == [6,7]
+intTest = all (==True) [int1, int2, int3, int4, int5, int6]
+
 dif1 = difference [1,2,3,4] [1] == [2,3,4]
 dif2 = difference [1,2,3,4] [4,3,2,1] == []
+dif3 = difference [] [1,2,3] == []
+dif4 = difference [1,2,3] [] == [1,2,3]
+dif5 = difference [5,6,7] [5,6,7,8] == []
+dif6 = difference [4,4,4] [5,5,5] == [4]
+dif7 = difference [4,4,4] [5,4,5] == []
+dif8 = difference [7,7,6] [5,4,5] == [6,7]
+difTest = all (==True) [dif1, dif2, dif3, dif4, dif5, dif6, dif7, dif8]
 
 inc1 = included [5,6] [1,6,4,5,7] == True
 inc2 = included [5,6] [1,6,4,7] == False
