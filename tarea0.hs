@@ -31,7 +31,7 @@ type Z = Int
 --    valores de esas expresiones.
 
 data V = B Bool
-       | C Conj  deriving (Show)           --conjuntos finitos de enteros
+       | C Conj  deriving (Show, Eq)           --conjuntos finitos de enteros
 
 type Conj = [Int]
 
@@ -65,23 +65,24 @@ belongs z (i:is) | z == i = True
                  | otherwise = belongs z is
 
 union :: Conj -> Conj -> Conj 
-union c1 c2 = sort $ nub (c1 ++ c2)
+union c1 c2 = nub (c1 ++ c2)
 
 intersection :: Conj -> Conj -> Conj 
 intersection [] c2 = []
 intersection c1 [] = []
-intersection (a:as) c2 | elem a c2 = sort $ nub $ a : intersection as c2
-                       | otherwise = intersection as c2
-
+intersection (i:is) c2 | elem i c2 = nub $ i : intersection is c2
+                       | otherwise = nub $ intersection is c2
+              
 difference :: Conj -> Conj -> Conj
 difference [] c2 = []
 difference c1 [] = c1
-difference (a:as) c2 | not $ elem a c2 = sort $ nub $ a : difference as c2
+difference (a:as) c2 | not $ elem a c2 = nub $ a : difference as c2
                      | otherwise = difference as c2
 
 included :: Conj -> Conj -> Bool
-included c1 c2 | (nub $ sort $ intersection c1 c2) == (nub $ sort c1) = True
-               | otherwise = False
+included [] c2 = True
+included (i:is) c2 | elem i c2 = included is c2
+                   | otherwise = False
 
 
 -- 4.2
@@ -170,17 +171,9 @@ ass4 :: E            -- z := True
 ass4 = Assign "z" incl2
 
 
- {----------------- Preguntas ---------------------------
-
-. Puedo usar sort, nub, elem etc?
-. Es correcto usar sort en conjuntos?
-. Uso sort y nub para que la diferencia salga con la interseccion y no haya problema
-. Errores por todos lados
---}
-
+--------------------------------------------------------
 ------------------ Ejemplos para probar ----------------
-
-
+--------------------------------------------------------
 
 m1 :: M
 m1 = []
@@ -188,7 +181,27 @@ m1 = []
 m2 :: M 
 m2 = [("a", B True), ("b", B False), ("c", C [1,2,3]), ("d", C [])]
 
-runTests = all (==True) [belTest, uniTest, intTest, difTest, incTest]
+runTests = all (==True) [belTest, uniTest, intTest, difTest, incTest, luTest, updTest]
+
+lu1 = lkup "x" [("x", B True), ("y", C [1,2,3])] == B True
+lu2 = lkup "x" [("x", B False), ("y", C [1,2,3])] == B False
+lu3 = lkup "y" [("x", B True), ("y", C [1,2,3])] == C [1,2,3]
+lu4 = lkup "a" [("x", B False), ("y", C [4,5]), ("a", B True)] == B True 
+lu5 = lkup "x" [("x", C [1,2]), ("x", B False)] == C [1,2]
+lu6 = lkup "x" [("a", B True), ("b", C [1]), ("x", C [2])] == C [2]
+lu7 = lkup "x" [("x", B False)] == B False       
+luTest = all (==True) [lu1, lu2, lu3, lu4, lu5, lu6, lu7]
+
+upd1 = upd [("x", B True), ("y", C [1,2,3])] ("x", C [4,5]) == [("x", C [4,5]), ("y", C [1,2,3])]
+upd2 = upd [("x", B True), ("y", C [1,2,3])] ("y", B False) == [("x", B True), ("y", B False)]
+upd3 = upd [("x", B True), ("y", C [1,2,3])] ("z", C [6]) == [("x", B True), ("y", C [1,2,3]), ("z", C [6])]
+upd4 = upd [] ("x", B True) == [("x", B True)]
+upd5 = upd [("a", B False), ("b", C [1,2])] ("a", C [3,4]) == [("a", C [3,4]), ("b", C [1,2])]
+upd6 = upd [("a", B False)] ("b", C [3]) == [("a", B False), ("b", C [3])]
+upd7 = upd [("a", B False)] ("c", B True) == [("a", B False), ("c", B True)]
+upd8 = upd [("x", B False), ("x", C [2,3])] ("x", C [4,5]) == [("x", C [4,5]), ("x", C [2,3])]
+updTest = all (==True) [upd1, upd2, upd3, upd4, upd5, upd6, upd7, upd8]
+
 
 bel1 = belongs 4 [4] == True
 bel2 = belongs 0 [] == False
@@ -204,19 +217,19 @@ uni1 = union [1,2,3] [1,2,3] == [1,2,3]
 uni2 = union [] [1,2,3] == [1,2,3]
 uni3 = union [1,2,3] [] == [1,2,3]
 uni4 = union [1,2,3] [3,2,1] == [1,2,3]
-uni5 = union [4,5,6] [3,2,1] == [1,2,3,4,5,6]
+uni5 = union [4,5,6] [3,2,1] == [4,5,6,3,2,1]
 uni6 = union [6] [6] == [6]
 uni7 = union [6] (union [7] [9]) == [6,7,9]
 uni8 = union [6] (intersection [7,9,0] [9,5,4]) == [6,9]
-uni9 = union [6,7] (difference [7,9,0] [9,5,4,9]) == [0,6,7]
+uni9 = union [6,7] (difference [7,9,0] [9,5,4,9]) == [6,7,0]
 uniTest = all (==True) [uni1, uni2, uni3, uni4, uni5, uni6, uni7, uni8, uni9]
 
 int1 = intersection [] [] == []
 int2 = intersection [] [1,2,3] == []
 int3 = intersection [7,6,5,4] [] == []
-int4 = intersection [3,2,1] [1,2,3] == [1,2,3]
+int4 = intersection [3,2,1] [1,2,3] == [3,2,1]
 int5 = intersection [3,4,5,6,4,3] [3,3] == [3]
-int6 = intersection [7,6,7] [7,8,7,6,6,6] == [6,7]
+int6 = intersection [7,6,7] [7,8,7,6,6,6] == [7,6]
 intTest = all (==True) [int1, int2, int3, int4, int5, int6]
 
 dif1 = difference [1,2,3,4] [1] == [2,3,4]
@@ -226,7 +239,7 @@ dif4 = difference [1,2,3] [] == [1,2,3]
 dif5 = difference [5,6,7] [5,6,7,8] == []
 dif6 = difference [4,4,4] [5,5,5] == [4]
 dif7 = difference [4,4,4] [5,4,5] == []
-dif8 = difference [7,7,6] [5,4,5] == [6,7]
+dif8 = difference [7,7,6] [5,4,5] == [7,6]
 difTest = all (==True) [dif1, dif2, dif3, dif4, dif5, dif6, dif7, dif8]
 
 inc1 = included [5,6] [1,6,4,5,7] == True
