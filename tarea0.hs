@@ -1,5 +1,5 @@
 
-module Lab0 where
+module Tarea0 where
 
 import Prelude
 import Data.List (nub, sort)
@@ -62,7 +62,7 @@ upd ((n,c):ts) p | fst p == n = ((n, snd p):ts)
 belongs :: Z -> Conj -> Bool
 belongs z [] = False
 belongs z (i:is) | z == i = True 
-               | otherwise = belongs z is
+                 | otherwise = belongs z is
 
 union :: Conj -> Conj -> Conj 
 union c1 c2 = sort $ nub (c1 ++ c2)
@@ -70,17 +70,17 @@ union c1 c2 = sort $ nub (c1 ++ c2)
 intersection :: Conj -> Conj -> Conj 
 intersection [] c2 = []
 intersection c1 [] = []
-intersection (a:as) c2 | elem a c2 = a : intersection as c2
+intersection (a:as) c2 | elem a c2 = sort $ nub $ a : intersection as c2
                        | otherwise = intersection as c2
 
 difference :: Conj -> Conj -> Conj
 difference [] c2 = []
 difference c1 [] = c1
 difference (a:as) c2 | not $ elem a c2 = sort $ a : difference as c2
-                     | otherwise = sort $ difference as c2
+                     | otherwise = difference as c2
 
 included :: Conj -> Conj -> Bool
-included c1 c2 | intersection c1 c2 == c1 = True
+included c1 c2 | (nub $ sort $ intersection c1 c2) == (nub $ sort c1) = True
                | otherwise = False
 
 
@@ -169,6 +169,14 @@ ass3 = Assign "y" pert2
 ass4 :: E            -- z := True
 ass4 = Assign "z" incl2
 
+
+ {----------------- Preguntas ---------------------------
+
+. Puedo usar sort, nub, elem etc?
+. Es correcto usar sort en conjuntos?
+. Uso sort y nub para que la diferencia salga con la interseccion y no haya problema
+--}
+
 ------------------ Ejemplos para probar ----------------
 
 evalua (m,e) = snd $ eval (m,e)
@@ -185,3 +193,26 @@ m0 = [(a,true),(b,true),(h,false)]
 
 m1 :: M
 m1 = []
+
+m2 :: M 
+m2 = [("a", B True), ("b", B False), ("c", C [1,2,3]), ("d", C [])]
+
+dif1 = difference [1,2,3,4] [1] == [2,3,4]
+dif2 = difference [1,2,3,4] [4,3,2,1] == []
+
+inc1 = included [5,6] [1,6,4,5,7] == True
+inc2 = included [5,6] [1,6,4,7] == False
+inc3 = included [] [1,6,4,5,7] == True
+inc4 = included [1,2,3] [] == False
+inc5 = included [1,2,3] [1,3,2] == True
+inc6 = included [1,2,3] [1,2] == False
+inc7 = included [4,5,6] [7,6,5,4] == True
+inc8 = included [] [] == True                    
+inc9 = included [1,1,1] [1,2,3] == True         
+inc10 = included [1,2,3] [1,3,2,1] == True
+inc11 = included [1,2,3,4] [1,2,3] == False
+inc12 = included [1,2,3] [1,2,3] == True
+inc13 = included [1,2,3,4] [2,3] == False
+inc14 = included [2] [1,2,3] == True             
+inc15 = included [4] [1,2,3] == False            
+incTest = all (==True) [inc1, inc2, inc3, inc4, inc5, inc6, inc7, inc8, inc9, inc10, inc11, inc12, inc13, inc14, inc15]
