@@ -1,0 +1,45 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #d9d9d9; /* Color de fondo */
+    margin: 0;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);      /*9 columnas*/
+    grid-template-rows: repeat(9, 1fr);         /*9 filas*/
+    gap: 10px;
+}
+
+.cell {
+    width: 60px; /* Ancho de cada celda */
+    height: 60px; /* Alto de cada celda */
+    border-radius: 50%; /* Hace que las celdas sean redondas */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    transition: background-color 0.3s ease; /* Transición suave */
+}
+
+.none{
+    /* border: 1px solid black; */
+    background-color: transparent; /* Fondo transparente */
+}
+
+.filled {
+    background-color: rgb(87, 65, 54); /* Color de las bolitas */
+}
+
+.filled:hover {
+    background-color: rgb(110, 93, 84);
+    transform: scale(1.1); /* Aumenta el tamaño al pasar el mouse */
+}
+
+.empty {
+    background-color: grey; /* Color para espacios vacíos */
+}
+
