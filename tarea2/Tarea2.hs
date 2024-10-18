@@ -25,18 +25,28 @@ type C = String
 -- 2. Definir el tipo de la Memoria y las funciones para operar sobre ella (búsqueda, actualización, alta y bajas).
 
 
-data V = ConsV C [V]          -- Constructor 
+data V = Cv C [V]          -- Constructor 
         | Null
+        deriving (Show)
 
 type M = [(X, V)]
 
 
-upd :: M -> [(X,V)] -> M 
-upd m xvs = undefined
+upd :: [(X,V)] -> M -> M 
+upd [] m = m
+upd l [] = l   
+upd ((x,v):xvs) m = upd xvs (updAux (x,v) m)
+        where 
+            updAux :: (X,V) -> M -> M
+            updAux (x,v) [] = [(x,v)]
+            updAux (x,v) ((a,b):mem) | x == a = (x,v) : mem 
+                                     | otherwise = (a,b) : updAux (x,v) mem
 
+lkup :: X -> M -> V
+lkup x [] = error ("No variable " ++ x ++ " in memory")
+lkup x ((x',v):mem) | x == x' = v 
+                    | otherwise = lkup x mem
 
-lkup :: X -> M -> M
-lkup x m = undefined
 
 alta :: [X] -> M -> M 
 alta xs m = undefined 
@@ -44,6 +54,9 @@ alta xs m = undefined
 bajas :: M -> [X] -> M
 bajas xs m = undefined      -- Usar filter o usar una auxiliar que haga una baja bajas = .. baja where baja ...
 
+
+
+-- No es parte de la semantica este.
 lkupBranch :: C -> [B] -> Maybe ([X], P)        -- Esto es que capaz que encuentra un [x], P. En vez de definirla asi puedo usar la de haskell que ya devuelve un Nothing 
 lkupBranch c bs = lookup c bs
 
