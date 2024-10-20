@@ -6,33 +6,30 @@ module Tarea2 where
 -- Número: 288469
 ----------------------------------------------------
 
--- 1. Definir tipos apropiados para representar los programas, expresiones y valores de Imp.
+-- Ejercicio 1. Definir tipos apropiados para representar los programas, expresiones y valores de Imp.
 
+data P = (:=) [X] [E]           -- Asignacion multiple
+        | Local [X] P           -- Declaración de variables locales
+        | (:.) P P              -- Secuencia P1 ; P2
+        | Case X [B]            -- Selección
+        | While X [B]           -- Iteración
 
-data P = (:=) [X] [E]       -- Assign
-        | Local [X] P 
-        | (:>) P P          -- P1 ; P2
-        | Case X [B]
-        | While X [B]
-
-data E = ConsExp C [E] | Var X
+data E = Ce C [E] | Var X       -- Constructor o variable
 
 type X = String 
-type B = (C, ([X], P))        -- c [x] -> p         Con esto puedo usar lookup de Haskell que ya utiliza Maybe
+type B = (C, ([X], P))          -- c [x] -> p         Con esto puedo usar lookup de Haskell que ya utiliza Maybe
 type C = String
 
-
--- 2. Definir el tipo de la Memoria y las funciones para operar sobre ella (búsqueda, actualización, alta y bajas).
-
-
-data V = Cv C [V]          -- Constructor 
+data V = Cv C [V]               -- Constructor 
         | Null
         deriving (Show)
+
+-- Ejercicio 2. Definir el tipo de la Memoria y las funciones para operar sobre ella (búsqueda, actualización, alta y bajas).
 
 type M = [(X, V)]
 
 
-upd :: [(X,V)] -> M -> M 
+upd :: [(X,V)] -> M -> M        -- Actualizacion multiple de variables
 upd [] m = m
 upd l [] = l   
 upd ((x,v):xvs) m = upd xvs (updAux (x,v) m)
@@ -43,32 +40,57 @@ upd ((x,v):xvs) m = upd xvs (updAux (x,v) m)
                                      | otherwise = (a,b) : updAux (x,v) mem
 
 lkup :: X -> M -> V
-lkup x [] = error ("No variable " ++ x ++ " in memory")
+lkup x [] = error ("No variable '" ++ x ++ "' in memory")
 lkup x ((x',v):mem) | x == x' = v 
                     | otherwise = lkup x mem
 
 
-alta :: [X] -> M -> M 
-alta xs m = undefined 
+alta :: [X] -> M -> M           -- [x] ++ M
+alta xs m = listNull xs ++ m 
+        where 
+            listNull [] = [] 
+            listNull [x] = [(x, Null)]
+            listNull (x:xs) = (x, Null) : listNull xs   
 
-bajas :: M -> [X] -> M
-bajas xs m = undefined      -- Usar filter o usar una auxiliar que haga una baja bajas = .. baja where baja ...
+bajas :: M -> [X] -> M          -- M - [x]
+bajas m [] = m
+bajas [] xs = []
+bajas m (x:xs) = bajas (baja x m) xs   
+        where 
+            baja :: X -> M -> M
+            baja x [] = []
+            baja x ((x',v):ms) | x == x' = ms 
+                               | otherwise = (x',v) : baja x ms   
 
 
+-- Ejercicio 3. Definir la funcion de evaluacion de expresiones de Imp.
 
--- No es parte de la semantica este.
-lkupBranch :: C -> [B] -> Maybe ([X], P)        -- Esto es que capaz que encuentra un [x], P. En vez de definirla asi puedo usar la de haskell que ya devuelve un Nothing 
-lkupBranch c bs = lookup c bs
+eval :: E -> M -> V                             -- e -(M)-> V   v es el valor resultante de evaluar e bajo M
+eval (Ce c es) m = Cv c (valores es m)          -- Chequear largos de [E] y [V]
+        where 
+            valores [] m = []
+            valores (e:es) m = eval e m : valores es m
+eval (Var x) m = lkup x m
 
--- Definir la evaluacion de expresiones en imp
 
-eval :: M -> E -> V
-eval m eval = undefined
 
 exec :: M -> P -> M         -- (triangulito |>)
 exec m p = undefined        --En el exec del case si no encuentra rama devuelve error non exhaustive!!
 
+
 -----------------
+-- No es parte de la semantica este.
+lkupBranch :: C -> [B] -> Maybe ([X], P)        -- Esto es que capaz que encuentra un [x], P. En vez de definirla asi puedo usar la de haskell que ya devuelve un Nothing 
+lkupBranch c bs = lookup c bs
+-----------------
+
+
+
+
+
+
+
+
 
 par :: X -> P
 par (n) = undefined
