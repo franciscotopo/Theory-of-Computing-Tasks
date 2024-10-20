@@ -72,10 +72,10 @@ eval (Ce c es) m = Cv c (valores es m)          -- Chequear largos de [E] y [V]
             valores (e:es) m = eval e m : valores es m
 eval (Var x) m = lkup x m
 
+-- Ejercicio 4. Definir la función (parcial) de ejecución de un programa de Imp
 
-
-exec :: M -> P -> M         -- (triangulito |>)
-exec m p = undefined        --En el exec del case si no encuentra rama devuelve error non exhaustive!!
+(|>) :: M -> P -> M         -- exec   En el exec del case si no encuentra rama devuelve error non exhaustive!!
+(|>) m p = undefined        
 
 
 -----------------
