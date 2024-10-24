@@ -66,30 +66,51 @@ bajas m (x:xs) = bajas (baja x m) xs
 -- Ejercicio 3. Definir la funcion de evaluacion de expresiones de Imp.
 
 eval :: E -> M -> V                             -- e -(M)-> V   v es el valor resultante de evaluar e bajo M
-eval (Ce c es) m = Cv c (valores es m)          -- Chequear largos de [E] y [V]
-        where 
-            valores [] m = []
-            valores (e:es) m = eval e m : valores es m
+eval (Ce c es) m = Cv c (map (`eval` m) es)     
 eval (Var x) m = lkup x m
 
 -- Ejercicio 4. Definir la función (parcial) de ejecución de un programa de Imp
 
-(|>) :: M -> P -> M         -- exec   En el exec del case si no encuentra rama devuelve error non exhaustive!!
-(|>) m p = undefined        
+-- La función exec tiene el simbolo |> en representacion del triangulo de ejecución
 
+(|>) :: M -> P -> M                        
+(|>) m (xs := es)   = case (length xs == length es) of {
+                        True -> upd m (zip xs (map (`eval` m) es))
+                    }
+(|>) m (Local xs p) = ((alta xs m) |> p) `bajas` xs     
+(|>) m (p1 :. p2)   = (m |> p1) |> p2 
+(|>) m (Case x bs)  = case (eval (Var x) m) of {
+                        Cv c vs -> case (lkupBranch c bs) of {                          -- c -(bs)-> ([x], p)
+                            Just (xs, p) -> case (length xs == length vs) of {
+                                True -> m |> (Local xs ((xs := (v2e vs)) :. p));          -- |xs| = |vs|
+                            };
+                            Nothing -> error "Non exhaustive patterns in function"
+                        }
+                    }
+(|>) m (While x bs) = case (eval (Var x) m) of {
+                        Cv c vs -> case (lkupBranch c bs) of {
+                            Nothing -> m;
+                            Just (xs, p) -> case (length xs == length vs) of {          -- |xs| = |vs|
+                                True -> m |> (Local xs ((xs := (v2e vs)) :. p)) |> (While x bs)
+                            }
+                        }
+                    }
+                 
+-- Búsqueda de constructores segun un c dado
 
------------------
--- No es parte de la semantica este.
-lkupBranch :: C -> [B] -> Maybe ([X], P)        -- Esto es que capaz que encuentra un [x], P. En vez de definirla asi puedo usar la de haskell que ya devuelve un Nothing 
+lkupBranch :: C -> [B] -> Maybe ([X], P) 
 lkupBranch c bs = lookup c bs
------------------
+
+-- Pasaje de variables a expresiones
+
+v2e :: [V] -> [E]
+v2e [] = []
+v2e ((Cv c vs'):vs) = Ce c (v2e vs') : v2e vs
 
 
 
 
-
-
-
+-- Ejercicio 5. Codificar en Imp embebido en Haskell los programas:
 
 
 par :: X -> P
