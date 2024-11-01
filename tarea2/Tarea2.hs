@@ -99,6 +99,7 @@ eval (Var x) m = lkup x m
 -- Búsqueda de constructores segun un c dado
 
 lkupBranch :: C -> [B] -> Maybe ([X], P) 
+lkupBranch c [] = Nothing
 lkupBranch c bs = lookup c bs
 
 -- Pasaje de variables a expresiones
@@ -114,7 +115,79 @@ v2e ((Cv c vs'):vs) = Ce c (v2e vs') : v2e vs
 
 
 par :: X -> P
-par (n) = undefined
+par (n) = Local ["n'"] (
+                ["result", "n'"] := [Ce "True" [], Var n] :.
+                While "n'" [
+                    ("S", (["x"], (Case "result" [
+                                    ("True",  ([], ["result"] := [Ce "False" []])),
+                                    ("False", ([], ["result"] := [Ce "True" []]))
+                                  ] 
+                                  :.          --Punto y coma
+                                  (["n'"] := [Var "x"]))    
+                        )
+                    )
+                ]                         
+        )
+
+m :: M 
+m = [("n", Cv "S" [Cv "0" []])]
+
+
+{--
+PAR (n) = {
+            Local n' {
+                 result , n' := True [], n
+                 ;
+                 while n' is [
+                        S [x] -> {
+                               Case result of [
+                                    True [] -> {result := False []} ,
+                                    False [] -> {result := True []}
+                                ];
+                                n' := x
+                               }                            
+                            ]                       
+                    }           
+            }
+
+--}
+
+
+
+
+
+
+
+
+
+
+
+
+{--
+HASKELL
+reverse :: X -> P 
+reverse (l) = Local ["l'"] (
+                ["l'", "result"] := [Var l, Const "[]" []]
+
+                :.
+                
+                While "l'" [
+                    (":",(["x","xs"], ["l'", "result"] := [Var "xs", Const ":" [Var "x", Var "result"]]))
+                ]
+                )
+
+IMP
+REVERSE(l) = {
+            local l' {
+                l', result := [][];
+                while l' is [
+                    : [x,xs] -> l', result := xs, :[x,result] 
+                ]
+                    }   --cuando sale, es que la lista esta vacia y ya revirtio la lista
+            }
+--}
+
+
 
 suma :: (X, X) -> P
 suma (m, n) = undefined
@@ -128,29 +201,7 @@ igualdadN (m, n) = undefined
 concatP :: (X, X) -> P
 concatP (l1, l2) = undefined
 
-{--
-IMP
-REVERSE(l) = {
-            local l' {
-                l', result := [][];
-                while l' is [
-                    : [x,xs] -> l', result := xs, :[x,result] 
-                ]
-                    }   --cuando sale, es que la lista esta vacia y ya revirtio la lista
-            }
-HASKELL
-reverse :: X -> P 
-reverse (l) = Local ["l'"] (
-                ["l'", "result"] := [Var l, Const "[]" []]
 
-                :.
-                
-                While "l'" [
-                    (":",(["x","xs"], ["l'", "result"] := [Var "xs", Const ":" [Var "x", Var "result"]]))
-                ]
-                )
-
---}
 
 {--
 
