@@ -95,11 +95,10 @@ eval (Var x) m = lkup x m
                             }
                         }
                     }
-                 
+
 -- Búsqueda de constructores segun un c dado
 
 lkupBranch :: C -> [B] -> Maybe ([X], P) 
-lkupBranch c [] = Nothing
 lkupBranch c bs = lookup c bs
 
 -- Pasaje de variables a expresiones
@@ -108,16 +107,12 @@ v2e :: [V] -> [E]
 v2e [] = []
 v2e ((Cv c vs'):vs) = Ce c (v2e vs') : v2e vs
 
- 
-
-
 -- Ejercicio 5. Codificar en Imp embebido en Haskell los programas:
-
 
 par :: X -> P
 par (n) = Local ["n'"] (
-                ["result", "n'"] := [Ce "True" [], Var n] :.
-                While "n'" [
+                (["result", "n'"] := [Ce "True" [], (Var n)]) :.
+                (While "n'" [
                     ("S", (["x"], (Case "result" [
                                     ("True",  ([], ["result"] := [Ce "False" []])),
                                     ("False", ([], ["result"] := [Ce "True" []]))
@@ -126,112 +121,69 @@ par (n) = Local ["n'"] (
                                   (["n'"] := [Var "x"]))    
                         )
                     )
-                ]                         
+                ])                         
         )
 
 m :: M 
-m = [("n", Cv "S" [Cv "0" []])]
+m = [("n", Cv "S" [Cv "0" []]), ("result", Cv "True" [])]
 
-
-{--
-PAR (n) = {
-            Local n' {
-                 result , n' := True [], n
-                 ;
-                 while n' is [
-                        S [x] -> {
-                               Case result of [
-                                    True [] -> {result := False []} ,
-                                    False [] -> {result := True []}
-                                ];
-                                n' := x
-                               }                            
-                            ]                       
-                    }           
-            }
-
---}
-
-
-
-
-
-
-
-
-
-
-
-
-{--
-HASKELL
-reverse :: X -> P 
-reverse (l) = Local ["l'"] (
-                ["l'", "result"] := [Var l, Const "[]" []]
-
-                :.
-                
-                While "l'" [
-                    (":",(["x","xs"], ["l'", "result"] := [Var "xs", Const ":" [Var "x", Var "result"]]))
-                ]
-                )
-
-IMP
-REVERSE(l) = {
-            local l' {
-                l', result := [][];
-                while l' is [
-                    : [x,xs] -> l', result := xs, :[x,result] 
-                ]
-                    }   --cuando sale, es que la lista esta vacia y ya revirtio la lista
-            }
---}
-
-
+mem = [("m", Cv "S" [Cv "0" []]), ("n", Cv "S" [Cv "0" []])]
 
 suma :: (X, X) -> P
-suma (m, n) = undefined
+suma (m, n) = Local ["n'"] (
+                (["n'", "result"] := [(Var n) , (Var m)]) :.
+                (While "n'" [
+                    ("S", (["x"], (["n'", "result"] := [Var "x", Ce "S" [Var "result"]])))     
+                ])    
+            )
 
 largo :: X -> P 
-largo (l) = undefined
+largo (l)   = Local ["l'"] (
+                (["l'", "result"] := [(Var l), (Ce "0" [])]) :. 
+                (While "l'" [
+                    (":", (["x", "xs"], (["result", "l'"] := [Ce "S" [Var "result"], Var "xs"])))
+                ])        
+            )
 
 igualdadN :: (X, X) -> P
-igualdadN (m, n) = undefined
+igualdadN (m, n) = Local ["m'", "n'"] (
+                    (["m'", "n'", "result"] := [Var m, Var n, Ce "True" []]) :.
+                    (While "m'" [
+                        ("S", (["x"], (Case "n'" [
+                            ("S", (["y"], ["m'", "n'"] := [Var "x", Var "y"])),
+                            ("0", ([], ["result"] := [Ce "False" []]))
+                        ])))
+                    ]) :.  
+                    (Case "n'" [
+                        ("S", (["x"], ["result"] := [Ce "False" []]))   --Cuando salgo del while es porque m' llegó a cero. Si n' todavia no es cero, son distintos
+                    ])
+                )
+
+mIgualdadN = [("m", Cv "S" [Cv "0" []]), ("n", Cv "S" [Cv "0" []])]
 
 concatP :: (X, X) -> P
-concatP (l1, l2) = undefined
+concatP (l1, l2) = Local ["l1'", "rev"] (
+                        (["l1'", "rev"] := [Var l1, Ce "[]" []] :.
+                        While "l1'" [
+                            (":", (["x", "xs"], ["l1'", "rev"] := [Var "xs", Ce ":" [Var "x", Var "rev"]]))
+                        ]) :.   -- Invierto l1' y luego itero sobre la revertida agregando el primer element delante del result que tiene el valor de l2
+                        (["result"] := [Var l2] :.
+                        While "rev" [
+                            (":", (["x", "xs"], ["rev", "result"] := [Var "xs", Ce ":" [Var "x", Var "result"]]))
+                        ])          
+                )
+    
+mConcat = [("l1", Cv ":" [Cv "6" [], Cv "2" []]), ("l2", Cv ":" [Cv "4" [], Cv "1" []])]
 
-
-
-{--
-
-andP (p, q) = {
-                case p of [
-                    True [] -> { result := q; := }
-                    False [] -> { result := False []}        
-                ]
-            }
+--------------------------------
+-- Pruebas de otras funciones --
+--------------------------------
 
 andP :: (X,X) -> P 
 andP (p,q) = (Case p [
-                ("True", ([], (["result"] := [Var q] :> := ))),
-                ("False", ([], (["result"] := [C "False" []])))
-            ] ) :> 
-            := 
+                ("False", ([], (["result"] := [Ce "False" []]))),
+                ("True", ([], (["result"] := [Var q])))
+            ])
 
-exec [("m", Cv "True" []), ("r", Cv "6" [])] ((andP ("m", "r"))
+mAnd = [("p", Cv "False" []), ("q", Cv "True" [])]
 
-= [("m", Cv "True" []), ("r", Cv "6" []), ("result", Cv "6" [])]
-
---}
-
-
-
-
-
-
-
-
-
-
--- Buscar una rama y no encontrarla esta bien EN EL WHILE. No es un error en el WHILE, pero si en el case 
