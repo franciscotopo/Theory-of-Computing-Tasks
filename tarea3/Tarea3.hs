@@ -2,76 +2,121 @@
 {-# LANGUAGE UnicodeSyntax #-}
 
 module MT where 
+
+    import Prelude hiding (iterate)
     
+
+    -- 1. Definir tipos apropiados para representar los simbolos Σ, estados , cintas, acciones y el código.
+
     type Σ = String
     
     blanck :: Σ 
     blanck = "#"
 
-    -- Representacion del cabezal  
-    
-    type Tape = ([Σ],Σ,[Σ]) --terna con lista: izquierda - simbolo que estoy leyendo - lista derecha 
+    type Q = String                 --State o estados
 
-    data Action = Left Tape | Right Tape | Write Tape Σ
-
-    type Q = String
-
-    i :: Q              --State o estados
+    i :: Q                  
     i = "i"
 
     h :: Q 
-    h = "h"  
+    h = "h"
 
-    type Branch = [(Σ, [(Action, Q)])]
+    type Tape = ([Σ],Σ,[Σ])          -- El sigma del medio es el cabezal        
 
-    type M = [(Q, Branch)]           -- Dado un estado me duevuelve su branch ES CODE o MAQUINA DE TURING
+    data Action = L | R | W Σ  
+ 
+    type M = [(Q, [Branch])]           -- Dado un estado me duevuelve su branch. Es CODE o MAQUINA DE TURING
 
+    type Branch = (Σ, (Action, Q))
 
-    -- Exec hace todas las transiciones
+    -- 2. Definir la función (parcial) de ejecución de un código sobre una cinta dada
 
-    exec :: Tape -> M -> Tape       -- Llama a iteracion
-    exec t c = undefined            -- ver la clase pasada lo que hicimos con imp (esta funcion usa una auxiliar que da un paso )
+    exec :: Tape -> M -> Tape       -- ver la clase pasada lo que hicimos con imp (esta funcion usa una auxiliar iteracion que da un paso )
+    exec t m = case (iterate t m i) of {
+                (t', h) -> t'
+            }
 
-    -- Funcion step que hace una transicion (un paso)
-
-    type Config = (Tape, Q)     --Dice para cierta cinta, en que estado estoy. 
-    -- 
-    
-    -- Una config es una cinta en cierto estado. Una pareja que me dice como se encuentra mi cinta en un cierto estado
-    -- Es el dibujo de la cinta en ciertoe estado.
-
+    type Config = (Tape, Q)     
+        
     iterate :: Tape -> M -> Q -> Config
-    iterate t m q = undefined
+    iterate t m "h" = (t, h)                                        -- Caso itero desde halt
+    iterate t m q   = case (step t (buscoEstado q m)) of {          -- Caso cinta con estado no halt
+                        (t'', q'') -> iterate (t'') m q''
+                    };
 
-    step :: [Branch] -> Tape -> Config    -- es succ    Cuando entro a step entro con la cinta y con las branches de haber buscado en el codigo
-    step bs t = 
+    buscoEstado :: Q -> M -> [Branch]
+    buscoEstado q m = case (lookup q m) of {
+                        Just branches -> branches;
+                        Nothing -> error "No se definio el simbolo"
+                    } 
+
+
+    step :: Tape -> [Branch] -> Config    
+    step (izq, v, der) bs = case (lookup' v bs) of {
+                    (L, q') -> ((init izq, last izq, v:der), q');
+                    (R, q') -> ((izq ++ [v], head der, tail der), q');
+                    (W o, q') -> ((izq, o, der), q')
+                }
+                
+    lookup' :: Σ -> [Branch] -> (Action, Q)
+    lookup' o bs = case (lookup o bs) of {
+                        Just algo -> algo; 
+                        Nothing -> case (lookup "_" bs) of {
+                            Just alg -> alg;
+                            Nothing -> error "No se definieron acciones para esa accion"
+                        }                         
+                    }
 
 
     -- Funciones
 
     left_sigma :: Σ -> M            -- este es el codigo. Luego hago exec con este codigo, que busca el sigma dado 
-    left_sigma o = undefined 
+    left_sigma o = [(i,     [("_", (L, "q0"))]),         
+                    ("q0",  [(o,      (W o, h )),
+                             ("_",    (L, "q0"))
+                            ])
+                   ]  
+
+     
+    t1 = (["#", "o", "g", "g", "g"],"#",["#", "#", "#"])
+    t2 = (["#", "o", "o", "o", "$"],"#",["#", "#", "#"])
+    t3 = (["#", "o", "f", "f", "f", "f"],"#",["#", "#", "#"])
+
+    pr11 = exec t1 (left_sigma "o") == (["#"],"o",["g","g","g","#","#","#","#"])
+    pr12 = exec t2 (left_sigma "o") == (["#", "o", "o"],"o",["$","#","#","#","#"])
+    pr13 = exec t3 (left_sigma "o") == (["#"],"o",["f","f","f","f","#", "#", "#", "#"])
 
     -- Elijo tres chirimbolos que quiera y mi maquina funciona para esos tres simbolos. cuando llamo la funcino le paso uno de esos tres
-
-
-    {--
-    q   |   [branch]
-
-    i       _ -> l, q0
-    qo      o -> 0, h
-            _ -> l, q0
-    
-    --}
 
     par :: M 
     par = undefined 
 
-    elem_sigma :: Σ -> M            -- Recibe un simbolo del alfabeto y me hace una maquina que bsuca ese simbolo
-    elem_sigma o = undefined 
+    elem_sigma :: Σ -> M
+    elem_sigma o = [(i,     [("_", (L, "q0"))]),
+                    ("q0",  [(o,   (R, "q1")),
+                             ("#", (R, "q3")),
+                             ("_", (L, "q0"))
+                            ]),
+                    ("q1",  [("#", (R, "q2")),
+                             ("_", (R, "q1"))
+                            ]),
+                    ("q2",  [("_", (W "True", h))]),
+                    ("q3",  [("#", (R, "q4")),
+                             ("_", (R, "q3"))
+                            ]),
+                    ("q4",  [("_", (W "False", h))])
+                   ] 
+    
+    t4 = (["#", "#", "#", "#"], "#" ,["#", "#"])
+
+    pr31 = exec t1 (elem_sigma "o") == (["#", "o", "g", "g", "g","#"], "True",["#", "#"])
+    pr32 = exec t2 (elem_sigma "o") == (["#", "o", "o", "o", "$", "#"], "True" ,["#", "#"])
+    pr33 = exec t3 (elem_sigma "o") == (["#", "o", "f", "f", "f", "f", "#"], "True",["#", "#"])
+    pr34 = exec t4 (elem_sigma "o") == (["#", "#", "#", "#", "#"], "False" ,["#"])
+    
 
     reverse :: M 
-    reverse = undefined 
+    reverse = undefined
 
 
 
