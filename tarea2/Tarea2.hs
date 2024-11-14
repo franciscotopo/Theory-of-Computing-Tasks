@@ -75,7 +75,7 @@ eval (Var x) m = lkup x m
 
 (|>) :: M -> P -> M                        
 (|>) m (xs := es)   = case (length xs == length es) of {
-                        True -> upd m (zip xs (map (`eval` m) es))
+                        True -> upd (zip xs (map (`eval` m) es)) m
                     }
 (|>) m (Local xs p) = ((alta xs m) |> p) `bajas` xs     
 (|>) m (p1 :. p2)   = (m |> p1) |> p2 
@@ -93,7 +93,8 @@ eval (Var x) m = lkup x m
                             Just (xs, p) -> case (length xs == length vs) of {          -- |xs| = |vs|
                                 True -> m |> (Local xs ((xs := (v2e vs)) :. p)) |> (While x bs)
                             }
-                        }
+                        };
+                        Null -> error x
                     }
 
 -- Búsqueda de constructores segun un c dado
@@ -124,6 +125,7 @@ par (n) = Local ["n'"] (
                 ])                         
         )
 
+
 m :: M 
 m = [("n", Cv "S" [Cv "0" []]), ("result", Cv "True" [])]
 
@@ -145,6 +147,8 @@ largo (l)   = Local ["l'"] (
                 ])        
             )
 
+mm = [("l", Cv ":" [Cv "1" [], Cv ":" [Cv "2" [], Cv "3" []]])]       -- 1 : (2 : 3)
+
 igualdadN :: (X, X) -> P
 igualdadN (m, n) = Local ["m'", "n'"] (
                     (["m'", "n'", "result"] := [Var m, Var n, Ce "True" []]) :.
@@ -155,7 +159,8 @@ igualdadN (m, n) = Local ["m'", "n'"] (
                         ])))
                     ]) :.  
                     (Case "n'" [
-                        ("S", (["x"], ["result"] := [Ce "False" []]))   --Cuando salgo del while es porque m' llegó a cero. Si n' todavia no es cero, son distintos
+                        ("S", (["x"], ["result"] := [Ce "False" []])),   --Cuando salgo del while es porque m' llegó a cero. Si n' todavia no es cero, son distintos
+                        ("0", ([], ["result"] := [Ce "True" []]))
                     ])
                 )
 
