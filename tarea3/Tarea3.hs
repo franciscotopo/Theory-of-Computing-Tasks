@@ -10,9 +10,6 @@ module MT where
     
     import Prelude hiding (iterate, reverse)
     
-
-    -- 1. Definir tipos apropiados para representar los simbolos Σ, estados , cintas, acciones y el código.
-
     type Σ = String
     
     blanck :: Σ 
@@ -26,15 +23,13 @@ module MT where
     h :: Q 
     h = "h"
 
-    type Tape = ([Σ],Σ,[Σ])          -- El sigma del medio es el cabezal        
+    type Tape = ([Σ],Σ,[Σ])    
 
     data Action = L | R | W Σ  
  
     type M = [(Q, [Branch])]           
 
     type Branch = (Σ, (Action, Q))
-
-    -- 2. Definir la función (parcial) de ejecución de un código sobre una cinta dada
 
     exec :: Tape -> M -> Tape       
     exec t m = case (iterate t m i) of {
@@ -72,8 +67,6 @@ module MT where
                         }                         
                     }
 
-
-    -- 3. Codificar MT embebidas en Haskell que computen los programas:
 
     left_sigma :: Σ -> M            
     left_sigma o = [(i,     [("_", (L, "q0"))]),         

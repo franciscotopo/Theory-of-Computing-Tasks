@@ -6,30 +6,25 @@ module Tarea2 where
 -- Número: 288469
 ----------------------------------------------------
 
--- Ejercicio 1. Definir tipos apropiados para representar los programas, expresiones y valores de Imp.
+data P = (:=) [X] [E]           
+        | Local [X] P           
+        | (:.) P P              
+        | Case X [B]            
+        | While X [B]           
 
-data P = (:=) [X] [E]           -- Asignacion multiple
-        | Local [X] P           -- Declaración de variables locales
-        | (:.) P P              -- Secuencia P1 ; P2
-        | Case X [B]            -- Selección
-        | While X [B]           -- Iteración
-
-data E = Ce C [E] | Var X       -- Constructor o variable
+data E = Ce C [E] | Var X       
 
 type X = String 
-type B = (C, ([X], P))          -- c [x] -> p         Con esto puedo usar lookup de Haskell que ya utiliza Maybe
+type B = (C, ([X], P))                   
 type C = String
 
-data V = Cv C [V]               -- Constructor 
+data V = Cv C [V]               
         | Null
         deriving (Show)
 
--- Ejercicio 2. Definir el tipo de la Memoria y las funciones para operar sobre ella (búsqueda, actualización, alta y bajas).
-
 type M = [(X, V)]
 
-
-upd :: [(X,V)] -> M -> M        -- Actualizacion multiple de variables
+upd :: [(X,V)] -> M -> M
 upd [] m = m
 upd l [] = l   
 upd ((x,v):xvs) m = upd xvs (updAux (x,v) m)
@@ -45,14 +40,14 @@ lkup x ((x',v):mem) | x == x' = v
                     | otherwise = lkup x mem
 
 
-alta :: [X] -> M -> M           -- [x] ++ M
+alta :: [X] -> M -> M   
 alta xs m = listNull xs ++ m 
         where 
             listNull [] = [] 
             listNull [x] = [(x, Null)]
             listNull (x:xs) = (x, Null) : listNull xs   
 
-bajas :: M -> [X] -> M          -- M - [x]
+bajas :: M -> [X] -> M  
 bajas m [] = m
 bajas [] xs = []
 bajas m (x:xs) = bajas (baja x m) xs   
@@ -62,16 +57,9 @@ bajas m (x:xs) = bajas (baja x m) xs
             baja x ((x',v):ms) | x == x' = ms 
                                | otherwise = (x',v) : baja x ms   
 
-
--- Ejercicio 3. Definir la funcion de evaluacion de expresiones de Imp.
-
-eval :: E -> M -> V                             -- e -(M)-> V   v es el valor resultante de evaluar e bajo M
+eval :: E -> M -> V
 eval (Ce c es) m = Cv c (map (`eval` m) es)     
 eval (Var x) m = lkup x m
-
--- Ejercicio 4. Definir la función (parcial) de ejecución de un programa de Imp
-
--- La función exec tiene el simbolo |> en representacion del triangulo de ejecución
 
 (|>) :: M -> P -> M                        
 (|>) m (xs := es)   = case (length xs == length es) of {
@@ -80,9 +68,9 @@ eval (Var x) m = lkup x m
 (|>) m (Local xs p) = ((alta xs m) |> p) `bajas` xs     
 (|>) m (p1 :. p2)   = (m |> p1) |> p2 
 (|>) m (Case x bs)  = case (eval (Var x) m) of {
-                        Cv c vs -> case (lkupBranch c bs) of {                          -- c -(bs)-> ([x], p)
+                        Cv c vs -> case (lkupBranch c bs) of {                          
                             Just (xs, p) -> case (length xs == length vs) of {
-                                True -> m |> (Local xs ((xs := (v2e vs)) :. p));          -- |xs| = |vs|
+                                True -> m |> (Local xs ((xs := (v2e vs)) :. p));          
                             };
                             Nothing -> error "Non exhaustive patterns in function"
                         }
@@ -90,25 +78,19 @@ eval (Var x) m = lkup x m
 (|>) m (While x bs) = case (eval (Var x) m) of {
                         Cv c vs -> case (lkupBranch c bs) of {
                             Nothing -> m;
-                            Just (xs, p) -> case (length xs == length vs) of {          -- |xs| = |vs|
+                            Just (xs, p) -> case (length xs == length vs) of {          
                                 True -> m |> (Local xs ((xs := (v2e vs)) :. p)) |> (While x bs)
                             }
                         };
                         Null -> error x
                     }
 
--- Búsqueda de constructores segun un c dado
-
 lkupBranch :: C -> [B] -> Maybe ([X], P) 
 lkupBranch c bs = lookup c bs
-
--- Pasaje de variables a expresiones
 
 v2e :: [V] -> [E]
 v2e [] = []
 v2e ((Cv c vs'):vs) = Ce c (v2e vs') : v2e vs
-
--- Ejercicio 5. Codificar en Imp embebido en Haskell los programas:
 
 par :: X -> P
 par (n) = Local ["n'"] (
@@ -118,7 +100,7 @@ par (n) = Local ["n'"] (
                                     ("True",  ([], ["result"] := [Ce "False" []])),
                                     ("False", ([], ["result"] := [Ce "True" []]))
                                   ] 
-                                  :.          --Punto y coma
+                                  :.          
                                   (["n'"] := [Var "x"]))    
                         )
                     )
@@ -147,7 +129,7 @@ largo (l)   = Local ["l'"] (
                 ])        
             )
 
-mm = [("l", Cv ":" [Cv "1" [], Cv ":" [Cv "2" [], Cv "3" []]])]       -- 1 : (2 : 3)
+mm = [("l", Cv ":" [Cv "1" [], Cv ":" [Cv "2" [], Cv "3" []]])]       
 
 igualdadN :: (X, X) -> P
 igualdadN (m, n) = Local ["m'", "n'"] (
@@ -159,7 +141,7 @@ igualdadN (m, n) = Local ["m'", "n'"] (
                         ])))
                     ]) :.  
                     (Case "n'" [
-                        ("S", (["x"], ["result"] := [Ce "False" []])),   --Cuando salgo del while es porque m' llegó a cero. Si n' todavia no es cero, son distintos
+                        ("S", (["x"], ["result"] := [Ce "False" []])),   
                         ("0", ([], ["result"] := [Ce "True" []]))
                     ])
                 )
@@ -171,7 +153,7 @@ concatP (l1, l2) = Local ["l1'", "rev"] (
                         (["l1'", "rev"] := [Var l1, Ce "[]" []] :.
                         While "l1'" [
                             (":", (["x", "xs"], ["l1'", "rev"] := [Var "xs", Ce ":" [Var "x", Var "rev"]]))
-                        ]) :.   -- Invierto l1' y luego itero sobre la revertida agregando el primer element delante del result que tiene el valor de l2
+                        ]) :.   
                         (["result"] := [Var l2] :.
                         While "rev" [
                             (":", (["x", "xs"], ["rev", "result"] := [Var "xs", Ce ":" [Var "x", Var "result"]]))

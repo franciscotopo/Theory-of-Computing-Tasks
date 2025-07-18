@@ -9,10 +9,6 @@ import Data.List (nub, sort)
 -- Número: 288469
 ----------------------------------------------------
 
--- 1. Expresiones:
---    Declarar un tipo inductivo (data) apropiado para representar las 
---    expresiones de conjuntos finitos de enteros (sintaxis abstracta).
-
 data E = Var X
        | Empty
        | Unit Z 
@@ -26,38 +22,22 @@ data E = Var X
 type X = String
 type Z = Int
 
--- 2. Valores:
---    Declarar un tipo inductivo (data) apropiado para representar los
---    valores de esas expresiones.
-
 data V = B Bool
-       | C Conj  deriving (Show, Eq)           --conjuntos finitos de enteros
+       | C Conj  deriving (Show, Eq)
 
 type Conj = [Int]
 
--- 3.  Memoria:
-
--- 3.1 Definir un tipo (type) apropiado para representar a la memoria.
-
 type M = [(X,V)]
-
--- 3.2 Definir la busqueda de una variable en la memoria (lkup: x -M-> v)
 
 lkup :: X -> M -> V
 lkup x [] = error ("Variable " ++ show x ++ " no inicializada")
 lkup x ((n,v):ts) | x == n = v
                   | otherwise = lkup x ts
 
--- 3.3 Definir la actualización de la memoria (upd: M ≺+ (x, v)).
-
 upd :: M -> (X,V) -> M
 upd [] p = [p]
 upd ((n,c):ts) p | fst p == n = ((n, snd p):ts)
                  | otherwise = (n,c) : upd ts p 
-
--- 4. Reglas de evaluación
-
--- 4.1 Programar las funciones auxiliares definidas en la especificación del lenguaje:
 
 belongs :: Z -> Conj -> Bool
 belongs z [] = False
@@ -83,9 +63,6 @@ included :: Conj -> Conj -> Bool
 included [] c2 = True
 included (i:is) c2 | elem i c2 = included is c2
                    | otherwise = False
-
-
--- 4.2
 
 eval :: (M, E) -> (M, V)
 eval (m, Var x)       = (m, lkup x m)
@@ -127,9 +104,6 @@ eval (m, Assign x e) = case eval (m, e) of {
                             (m', B bool) -> (upd m' (x, B bool), B bool);
                             (m', C conj) -> (upd m' (x, C conj), C conj);
                      }
-
-
--- 5  Codificar en el lenguaje de las expresiones de conjuntos embebido en Haskell los siguientes conjutnos:
 
 conj1 :: E           -- {1,2,3}
 conj1 = (Unit 1) `Union`((Unit 2) `Union` (Unit 3))
