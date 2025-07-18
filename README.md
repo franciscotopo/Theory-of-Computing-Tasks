@@ -1,6 +1,6 @@
 # Task 1: Functional Language with Weak Evaluation in Haskell
 
-Task 2 is the implementation of an **embedded functional language in Haskell** that supports algebraic data types, pattern matching, recursion, and weak evaluation semantics. The language models core ideas from lambda calculus and functional programming within Haskell using its type system and functional constructs.
+Task 1 is the implementation of an **embedded functional language in Haskell** that supports algebraic data types, pattern matching, recursion, and weak evaluation semantics. The language models core ideas from lambda calculus and functional programming within Haskell using its type system and functional constructs.
 
 ---
 
@@ -20,7 +20,7 @@ It allows you to write and evaluate functional programs within Haskell using you
 
 ---
 
-## Language Syntax
+## 🧠 Language Syntax
 
 ### Expressions (`E`)
 ```haskell
@@ -30,8 +30,36 @@ data E = Var X                  -- Variable
        | Apl E E                -- Application
        | Case E [B]             -- Pattern matching
        | Rec X E                -- Recursive function
+```
+
+### Evaluation Strategy
+The evaluation is split in two phases:
+
+`weak :: E -> W`
+
+Reduces expressions to Weak Head Normal Form (WHNF):
+
+A lambda is not reduced until applied. A constructor is not reduced if it's the outermost form. Recursion is implemented by substituting Rec with itself.
+
+`eval :: E -> V`
+
+Fully reduces a weak expression to a value by recursively evaluating subcomponents.
+
+### Scoping and Substitution
+
+efecto: Performs eager substitution on expressions according to an environment (S = [(X, E)]), carefully removing shadowed variables.
+
+bajas: Utility to remove bindings from scope.
+
+sustSimul: Builds substitution environments from parallel lists.
+
+buscoRama: Matches a constructor to the correct Case branch.
 
 
+<br><br>
+<br><br>
+
+---
 
 # Task 2: Embedded Imperative Language in Haskell
 
@@ -54,7 +82,7 @@ You can define programs and evaluate them directly on memory stores, simulating 
 
 ---
 
-## Language Constructs
+## 🧠 Language Constructs
 
 The core abstract syntax tree is defined by:
 
@@ -64,8 +92,10 @@ data P = [X] := [E]        -- Assignment
        | P :. P            -- Sequencing
        | Case X [B]        -- Pattern matching
        | While X [B]       -- Loop
+```
 
 ---
+<br><br><br><br>
 
 # Task 3: Turing Machine Embedded in Haskell
 
@@ -96,7 +126,7 @@ This approach takes full advantage of Haskell's **type system, recursion, and fu
 
 ---
 
-## Code Structure
+## 🧠 Code Structure
 
 - `Σ` (Alphabet): Represented as `String`
 - `Tape`: Modeled as a triple `(left, current, right)` of symbols
